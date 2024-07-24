@@ -39,7 +39,7 @@ if __name__ == "__main__":
     autoscaling = session.client('autoscaling')
     ssm_client = session.client('ssm')
 
-    host = ""
+    host = "https://search-hoangia-test-ee-btik57xti77rhypkon4pourlfe.us-east-1.es.amazonaws.com"
 
     tags = [
         {
