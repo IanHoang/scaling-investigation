@@ -5,7 +5,7 @@
 2. Set up venv (`python3 -m venv .venv`) and run (`source .venv/bin/activate`) to activate it. Afterwards, run `pip3 install -r requirements.txt` to install dependencies
 3. Create an AMI with `run-osb-with-term.sh` copied onto it
 4. Set up an OpenSearch cluster
-5. Copy .env.example to .env and provide AWS credentials there
+5. Copy `.env.example` to `.env` and insert AWS credentials there
 
 #### Set up an Auto Scaling Group
 Run `python3 asg-manager.py create` with appropriate parameters to create an auto scaling group.
