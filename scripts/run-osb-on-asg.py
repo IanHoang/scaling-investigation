@@ -41,12 +41,12 @@ if __name__ == "__main__":
     autoscaling = session.client('autoscaling')
     ssm_client = session.client('ssm')
 
-    host = ""
+    host = os.getenv('HOST')
 
     tags = [
         {
             'Key': 'aws:autoscaling:groupName',
-            'Value': 'scaling-investigation',
+            'Value': os.getenv('AUTOSCALING_GROUP_NAME'),
             'PropagateAtLaunch': True
         }
     ]
