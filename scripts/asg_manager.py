@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 # Defaults
 default_launch_config_name = 'osb-big5-term-queries'
 default_instance_type = 'c5.large'
-default_ami_id = 'ami-0ee83a75c41ec1b32'  # Replace with your desired AMI ID
+default_ami_id = 'ami-0a371873a732e887d'  # Replace with your desired AMI ID
 default_min_size = 1
 default_max_size = 5
 default_desired_capacity = 3
@@ -32,33 +32,36 @@ def list_asg_instances(ec2_client, autoscaling_client, tags):
 
 def provision_asg(autoscaling_client, asg_name, launch_config_name, instance_type, ami_id, min_size, max_size, desired_capacity, tags):
     # Create a launch configuration
-    response_launch_config = autoscaling.create_launch_configuration(
-        LaunchConfigurationName=launch_config_name,
-        ImageId=ami_id,
-        InstanceType=instance_type
-    )
-
-    print(response_launch_config)
+    if not does_launch_config_exist(autoscaling_client, launch_config_name):
+        response_launch_config = autoscaling.create_launch_configuration(
+            LaunchConfigurationName=launch_config_name,
+            ImageId=ami_id,
+            InstanceType=instance_type
+        )
+        print(response_launch_config)
 
     region = os.getenv('AWS_REGION')
     availability_zones_suffixes = ['a', 'b', 'c', 'd']
     availability_zones = [region + availability_zones_suffixes[i] for i in range(len(availability_zones_suffixes))]
 
-    # Create an auto scaling group
-    response_auto_scaling_group = autoscaling_client.create_auto_scaling_group(
-        AutoScalingGroupName=asg_name,
-        LaunchConfigurationName=launch_config_name,
-        MinSize=min_size,
-        MaxSize=max_size,
-        DesiredCapacity=desired_capacity,
-        AvailabilityZones=availability_zones,  # Replace with your desired availability zones
-        Tags=tags
-    )
+    try:
+        # Create an auto scaling group
+        response_auto_scaling_group = autoscaling_client.create_auto_scaling_group(
+            AutoScalingGroupName=asg_name,
+            LaunchConfigurationName=launch_config_name,
+            MinSize=min_size,
+            MaxSize=max_size,
+            DesiredCapacity=desired_capacity,
+            AvailabilityZones=availability_zones,  # Replace with your desired availability zones
+            Tags=tags
+        )
+    except autoscaling_client.exceptions.AlreadyExistsFault as e:
+        raise Exception("Auto scaling group resource exists: ", e)
 
     print(response_auto_scaling_group)
 
 def scale_out_asg(autoscaling_client, asg_name, updated_desired_capacity):
-    response = autoscaling.update_auto_scaling_group(
+    response = autoscaling_client.update_auto_scaling_group(
         AutoScalingGroupName=asg_name,
         DesiredCapacity=updated_desired_capacity
     )
@@ -75,6 +78,19 @@ def delete_asg(ec2_client, autoscaling_client, asg_name, launch_config_name):
 
     # Delete the launch configuration
     autoscaling_client.delete_launch_configuration(LaunchConfigurationName=launch_config_name)
+
+def does_launch_config_exist(autoscaling_client, launch_config_name):
+    try:
+        response = autoscaling_client.describe_launch_configurations(
+            LaunchConfigurationNames=[launch_config_name]
+        )
+        print(response['LaunchConfigurations'][0])
+        return True
+    except autoscaling_client.exceptions.ClientError as e:
+        if e.response['Error']['Code'] == 'InvalidLaunchConfiguration.NotFound':
+            return False
+        else:
+            raise e
 
 if __name__ == '__main__':
     load_dotenv()
@@ -105,9 +121,9 @@ if __name__ == '__main__':
     create_parser.add_argument('--launch-config-name', '-l', default=default_launch_config_name, help='Launch Configuration Name')
     create_parser.add_argument('--instance-type', '-t', default=default_instance_type, help='Instance Type')
     create_parser.add_argument('--ami-id', '-i', default=default_ami_id, help='AMI ID')
-    create_parser.add_argument('--min-size', '-min', default=default_min_size, help='Min size of auto scaling group')
-    create_parser.add_argument('--max-size', '-max', default=default_max_size, help='Max size of auto scaling group')
-    create_parser.add_argument('--desired-capacity', '-c', default=default_desired_capacity, help='Desired capacity of auto scaling group')
+    create_parser.add_argument('--min-size', '-min', type=int, default=default_min_size, help='Min size of auto scaling group')
+    create_parser.add_argument('--max-size', '-max', type=int, default=default_max_size, help='Max size of auto scaling group')
+    create_parser.add_argument('--desired-capacity', '-c', type=int, default=default_desired_capacity, help='Desired capacity of auto scaling group')
 
     # scale-asg command
     scale_parser = subparsers.add_parser('update', help='Update capacity of an existing Auto Scaling Group')

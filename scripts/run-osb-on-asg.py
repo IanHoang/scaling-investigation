@@ -46,7 +46,7 @@ if __name__ == "__main__":
     tags = [
         {
             'Key': 'aws:autoscaling:groupName',
-            'Value': 'scale_testing_demo',
+            'Value': 'scaling-investigation',
             'PropagateAtLaunch': True
         }
     ]
