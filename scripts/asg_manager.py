@@ -7,10 +7,12 @@ from dotenv import load_dotenv
 # Defaults
 default_launch_config_name = 'osb-big5-term-queries'
 default_instance_type = 'c5.large'
-default_ami_id = 'ami-0a371873a732e887d'  # Replace with your desired AMI ID
+default_ami_id = 'ami-03b0d5dc13adfbcdd'  # Replace with your desired AMI ID
 default_min_size = 1
 default_max_size = 5
 default_desired_capacity = 3
+default_key_name = "hoangia-ee-iad"
+default_security_group = "launch-wizard-53"
 
 def list_asg_instances(ec2_client, autoscaling_client, tags):
     # ASG API cannot filter based on asg_name, thus we need to use tags
@@ -27,18 +29,23 @@ def list_asg_instances(ec2_client, autoscaling_client, tags):
         if all(instance_tags.get(tag['Key'], None) == tag['Value'] for tag in tags):
             matched_instances.append(instance_id)
 
-    print(matched_instances)
+    print("Instances to run on: ", matched_instances)
     return matched_instances
 
-def provision_asg(autoscaling_client, asg_name, launch_config_name, instance_type, ami_id, min_size, max_size, desired_capacity, tags):
+def provision_asg(autoscaling_client, asg_name, launch_config_name, instance_type, ami_id, min_size, max_size, desired_capacity, tags, key_name, security_group):
     # Create a launch configuration
-    if not does_launch_config_exist(autoscaling_client, launch_config_name):
+    if does_launch_config_exist(autoscaling_client, launch_config_name):
+        print("Launch configuraiton already exists")
+    else:
         response_launch_config = autoscaling.create_launch_configuration(
             LaunchConfigurationName=launch_config_name,
             ImageId=ami_id,
-            InstanceType=instance_type
+            InstanceType=instance_type,
+            KeyName=key_name,
+            SecurityGroups=[security_group]
         )
-        print(response_launch_config)
+
+        print("Launch configuration response: ", response_launch_config)
 
     region = os.getenv('AWS_REGION')
     availability_zones_suffixes = ['a', 'b', 'c', 'd']
@@ -58,7 +65,7 @@ def provision_asg(autoscaling_client, asg_name, launch_config_name, instance_typ
     except autoscaling_client.exceptions.AlreadyExistsFault as e:
         raise Exception("Auto scaling group resource exists: ", e)
 
-    print(response_auto_scaling_group)
+    print("Autoscaling group response: ", response_auto_scaling_group)
 
 def scale_out_asg(autoscaling_client, asg_name, updated_desired_capacity):
     response = autoscaling_client.update_auto_scaling_group(
@@ -84,8 +91,11 @@ def does_launch_config_exist(autoscaling_client, launch_config_name):
         response = autoscaling_client.describe_launch_configurations(
             LaunchConfigurationNames=[launch_config_name]
         )
-        print(response['LaunchConfigurations'][0])
-        return True
+        print("Launch configurations: ", response['LaunchConfigurations'])
+        if len(response['LaunchConfigurations']) > 0 and launch_config_name in response['LaunchConfigurations']:
+            return True
+        else:
+            return False
     except autoscaling_client.exceptions.ClientError as e:
         if e.response['Error']['Code'] == 'InvalidLaunchConfiguration.NotFound':
             return False
@@ -124,6 +134,8 @@ if __name__ == '__main__':
     create_parser.add_argument('--min-size', '-min', type=int, default=default_min_size, help='Min size of auto scaling group')
     create_parser.add_argument('--max-size', '-max', type=int, default=default_max_size, help='Max size of auto scaling group')
     create_parser.add_argument('--desired-capacity', '-c', type=int, default=default_desired_capacity, help='Desired capacity of auto scaling group')
+    create_parser.add_argument('--key-name', '-k', default=default_key_name, help='Key name to access instances')
+    create_parser.add_argument('--security-group', '-s', default=default_security_group, help='Security group to use')
 
     # scale-asg command
     scale_parser = subparsers.add_parser('update', help='Update capacity of an existing Auto Scaling Group')
@@ -140,7 +152,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.command == 'create':
-        provision_asg(autoscaling, args.asg_name, args.launch_config_name, args.instance_type, args.ami_id, args.min_size, args.max_size, args.desired_capacity, tags)
+        provision_asg(autoscaling, args.asg_name, args.launch_config_name, args.instance_type, args.ami_id, args.min_size, args.max_size, args.desired_capacity, tags, args.key_name, args.security_group)
     elif args.command == 'scale':
         scale_out_asg(autoscaling, args.asg_name, args.updated_desired_capacity)
     elif args.command == 'delete':
