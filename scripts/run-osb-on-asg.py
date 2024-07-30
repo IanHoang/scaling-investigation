@@ -41,7 +41,7 @@ if __name__ == "__main__":
     autoscaling = session.client('autoscaling')
     ssm_client = session.client('ssm')
 
-    host = os.getenv('HOST')
+    host = os.getenv('TARGET_HOST')
 
     tags = [
         {

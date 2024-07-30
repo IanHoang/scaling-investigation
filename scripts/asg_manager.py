@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 # Defaults
 default_launch_config_name = 'osb-big5-term-queries'
 default_instance_type = 'c5.large'
-default_ami_id = 'ami-03b0d5dc13adfbcdd'  # Replace with your desired AMI ID
+default_ami_id = 'ami-0fedef809506a0a5d'  # Replace with your desired AMI ID
 default_min_size = 1
 default_max_size = 5
 default_desired_capacity = 3
