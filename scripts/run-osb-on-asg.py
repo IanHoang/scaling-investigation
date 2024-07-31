@@ -1,17 +1,16 @@
 import os
+import argparse
 
 import boto3
 from dotenv import load_dotenv
 
 from asg_manager import list_asg_instances
 
-def run_osb_on_asg(ssm_client, host, instance_ids):
-    print(instance_ids)
-
+def run_osb_on_asg(ssm_client, host, instance_ids, test_execution_id):
     # Define the shell script commands
     shell_script_commands = [
         '#!/bin/bash',
-        f"runuser -l ec2-user -c \"screen -dmS SCALE_TESTING /home/ec2-user/run-osb-term-queries.sh 8-clients-3 {host}\"",
+        f"runuser -l ec2-user -c \"screen -dmS SCALE_TESTING /home/ec2-user/run-osb-term-queries.sh {test_execution_id} {host}\"",
         ''
     ]
 
@@ -27,9 +26,15 @@ def run_osb_on_asg(ssm_client, host, instance_ids):
 
     # Get the command ID
     command_id = response['Command']['CommandId']
-    print(f"Running OSB scripts on {instance_ids}. Command ID: {command_id}")
+    instance_count = len(instance_ids)
+    print(f"Running OSB scripts on {instance_count} instances: {instance_ids}")
+    print(f"Command ID: {command_id}")
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Aggregate Results from MDS')
+    parser.add_argument('--id', '-i', required=True, help='Test-execution-id to use for a round of experiments')
+    args = parser.parse_args()
+
     load_dotenv()
 
     session = boto3.Session(
@@ -52,6 +57,4 @@ if __name__ == "__main__":
     ]
     instance_ids = list_asg_instances(ec2, autoscaling, tags)
 
-    run_osb_on_asg(ssm_client, host, instance_ids)
-
-
+    run_osb_on_asg(ssm_client, host, instance_ids, args.id)

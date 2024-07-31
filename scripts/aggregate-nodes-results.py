@@ -1,5 +1,7 @@
 import os
 import argparse
+import re
+import statistics
 
 import pandas as pd
 import tabulate
@@ -8,23 +10,37 @@ import boto3
 from dotenv import load_dotenv
 
 THROUGHPUT = 'throughput'
-LATENCY = 'latency'
 SERVICE_TIME = 'service_time'
+LATENCY = 'latency'
 
-def gather_results(client_details, output_name, test_execution_id):
+# Aggregate results in a round: with a specific test_execution_id pattern (e.g. 8-clients-2) because we need to aggregate results from all nodes in a round
+# Aggregate all rounds at the end
+def aggregate_results(client_details, output_name, test_execution_id):
     client = create_opensearch_client(client_details)
     documents = get_documents(client, test_execution_id)
 
-    throughput_metrics, latency_metrics, service_time_metrics = filter_results(documents)
+    throughput_metrics, service_time_metrics, latency_metrics = filter_results(documents)
     # Create dataframes
     throughput_df = pd.DataFrame.from_dict(throughput_metrics, orient='index')
-    latency_df = pd.DataFrame.from_dict(latency_metrics, orient='index')
     service_time_df = pd.DataFrame.from_dict(service_time_metrics, orient='index')
+    latency_df = pd.DataFrame.from_dict(latency_metrics, orient='index')
 
     # Print to console
     print(tabulate.tabulate(throughput_df, headers='keys', tablefmt='grid', showindex=True))
     print(tabulate.tabulate(service_time_df, headers='keys', tablefmt='grid', showindex=True))
     print(tabulate.tabulate(latency_df, headers='keys', tablefmt='grid', showindex=True))
+
+    # Aggregate results
+    throughput_agg = {"test-pattern": test_execution_id, "min": None, "mean": None, "median": None, "units": "ops/s"}
+    service_time_agg = {"test-pattern": test_execution_id, "50_0": None, "90_0": None, "99_0": None, "99_9": None, "99_99": None, "100_0": None, "units": "ms"}
+    latency_agg = {"test-pattern": test_execution_id, "50_0": None, "90_0": None, "99_0": None, "99_9": None, "99_99": None, "100_0": None, "units": "ms"}
+
+    populated_throughput_agg = calculate_arithmetic_mean(throughput_metrics, throughput_agg)
+    populated_service_time_agg = calculate_arithmetic_mean(service_time_metrics, service_time_agg)
+    populated_latency_agg = calculate_arithmetic_mean(latency_metrics, latency_agg)
+    print(populated_throughput_agg)
+    print(populated_service_time_agg)
+    print(populated_latency_agg)
 
     # Export to CSV
     # throughput_df.to_csv(f"throughput-{output_name}.csv", index_label='Row ID')
@@ -33,23 +49,27 @@ def gather_results(client_details, output_name, test_execution_id):
 
 def filter_results(documents):
     throughput = {}
-    latency = {}
     service_time = {}
+    latency = {}
 
     for document in documents:
         document_name = document['_source']['name']
         document_id = document['_source']['test-execution-id']
+        operation = document['_source']['operation']
         value = document['_source']['value']
-        print(document)
+
+        node_ip_address = get_node_ip_address(document_id)
+        value["node_ip_address"] = node_ip_address
+        value["operation"] = operation
 
         if document_name == THROUGHPUT:
             throughput[document_id] = value
-        elif document_name == LATENCY:
-            latency[document_id] = value
         elif document_name == SERVICE_TIME:
             service_time[document_id] = value
+        elif document_name == LATENCY:
+            latency[document_id] = value
 
-    return throughput, latency, service_time
+    return throughput, service_time, latency
 
 # TODO: Need to address this and add to README
 # session = boto3.Session(
@@ -131,8 +151,37 @@ def get_documents(client, test_execution_id):
 
     return documents
 
+def calculate_arithmetic_mean(nodes, metrics_to_average):
+
+    for metric in metrics_to_average:
+        if metric == "test-pattern" or metric == "units":
+            continue
+
+        metrics_from_nodes = [nodes[node][metric] for node in nodes]
+        metrics_to_average[metric] = statistics.mean(metrics_from_nodes)
+
+    return metrics_to_average
+
+
+def calculate_relative_stdev(node_metrics):
+    pass
+
+def get_node_ip_address(document_id):
+    # Define the regular expression pattern
+    pattern = r'-(\d+\.\d+\.\d+\.\d+)-'
+
+    # Search for the pattern in the string
+    match = re.search(pattern, document_id)
+
+    if match:
+        ip_address = match.group(1)
+        return ip_address
+    else:
+        raise Exception("No IP Address found")
+
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Aggregate Results from MDS')
+    parser = argparse.ArgumentParser(description='Aggregate Results from Nodes from MDS')
     parser.add_argument('--output-name', '-n', required=True, help="Output filename to use")
     parser.add_argument('--id', '-i', default=None, help='Test-execution-id or test-execution-id pattern for specific documents')
     args = parser.parse_args()
@@ -152,4 +201,4 @@ if __name__ == "__main__":
         "password": os.getenv('MDS_PASSWORD')
     }
 
-    gather_results(client_details, args.output_name, args.id)
+    aggregate_results(client_details, args.output_name, args.id)

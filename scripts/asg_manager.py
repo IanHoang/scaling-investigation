@@ -29,7 +29,7 @@ def list_asg_instances(ec2_client, autoscaling_client, tags):
         if all(instance_tags.get(tag['Key'], None) == tag['Value'] for tag in tags):
             matched_instances.append(instance_id)
 
-    print("Instances to run on: ", matched_instances)
+    # print("Instances to run on: ", matched_instances)
     return matched_instances
 
 def provision_asg(autoscaling_client, asg_name, launch_config_name, instance_type, ami_id, min_size, max_size, desired_capacity, tags, key_name, security_group):
@@ -67,12 +67,22 @@ def provision_asg(autoscaling_client, asg_name, launch_config_name, instance_typ
 
     print("Autoscaling group response: ", response_auto_scaling_group)
 
-def scale_out_asg(autoscaling_client, asg_name, updated_desired_capacity):
-    response = autoscaling_client.update_auto_scaling_group(
-        AutoScalingGroupName=asg_name,
-        DesiredCapacity=updated_desired_capacity
+def update_asg(autoscaling_client, asg_name, updated_desired_capacity, updated_max_size):
+    if updated_max_size is not None:
+        response = autoscaling_client.update_auto_scaling_group(
+            AutoScalingGroupName=asg_name,
+            MaxSize=updated_max_size,
+            DesiredCapacity=updated_desired_capacity
     )
-    print(response)
+    else:
+        response = autoscaling_client.update_auto_scaling_group(
+            AutoScalingGroupName=asg_name,
+            DesiredCapacity=updated_desired_capacity
+        )
+    if response['ResponseMetadata']['HTTPStatusCode'] == 200:
+        print(f"Success. Updating autoscaling group to have {updated_desired_capacity} nodes")
+    else:
+        print("Error: ", response)
 
 def delete_asg(ec2_client, autoscaling_client, asg_name, launch_config_name):
     # Terminate all instances in the auto scaling group
@@ -141,6 +151,7 @@ if __name__ == '__main__':
     scale_parser = subparsers.add_parser('update', help='Update capacity of an existing Auto Scaling Group')
     scale_parser.add_argument('--asg-name', '-n', required=True, help='Auto Scaling Group Name')
     scale_parser.add_argument('--updated-desired-capacity', '-c', type=int, required=True, help='Updated Desired Capacity')
+    create_parser.add_argument('--updated-max-size', '-max', type=int, default=None, help='Updated max size of auto scaling group')
 
     # delete-asg command
     delete_parser = subparsers.add_parser('delete', help='Delete an Auto Scaling Group')
@@ -153,8 +164,8 @@ if __name__ == '__main__':
 
     if args.command == 'create':
         provision_asg(autoscaling, args.asg_name, args.launch_config_name, args.instance_type, args.ami_id, args.min_size, args.max_size, args.desired_capacity, tags, args.key_name, args.security_group)
-    elif args.command == 'scale':
-        scale_out_asg(autoscaling, args.asg_name, args.updated_desired_capacity)
+    elif args.command == 'update':
+        update_asg(autoscaling, args.asg_name, args.updated_desired_capacity, args.updated_max_size)
     elif args.command == 'delete':
         delete_asg(ec2, autoscaling, args.asg_name, args.launch_config_name)
     elif args.command == "list-instances":
