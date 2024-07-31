@@ -31,7 +31,6 @@ def gather_results(client_details, output_name, test_execution_id):
     # service_time_df.to_csv(f"service-time-{output_name}.csv", index_label='Row ID')
     # latency_df.to_csv(f"latency-{output_name}.csv", index_label='Row ID')
 
-
 def filter_results(documents):
     throughput = {}
     latency = {}
