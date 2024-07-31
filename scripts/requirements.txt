@@ -1,3 +1,5 @@
 python-dotenv
 boto3
+pandas
+tabulate
 opensearch-py

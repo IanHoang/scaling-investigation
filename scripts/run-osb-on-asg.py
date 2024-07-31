@@ -11,7 +11,7 @@ def run_osb_on_asg(ssm_client, host, instance_ids):
     # Define the shell script commands
     shell_script_commands = [
         '#!/bin/bash',
-        f"runuser -l ec2-user -c \"screen -dmS SCALE_TESTING /home/ec2-user/run-osb-term-queries.sh osb-test {host}\"",
+        f"runuser -l ec2-user -c \"screen -dmS SCALE_TESTING /home/ec2-user/run-osb-term-queries.sh 8-clients-3 {host}\"",
         ''
     ]
 
