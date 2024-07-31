@@ -11,7 +11,14 @@
 Run `python3 asg-manager.py create` with appropriate parameters to create an auto scaling group.
 
 #### Run Tests
-Run `python3 run-osb-on-asg.py` to run tests on auto scaling group. Ensure that host and tags are provided.
+Run `python3 run-osb-on-asg.py -i <test-exeuction-id>` to run tests on auto scaling group. Ensure that host and tags are provided.
 
 #### Kill Tests
 Run `python3 kill-osb-on-asg.py` to kill tests on auto scaling group. Ensure that host and tags are provided.
+
+
+#### Preliminary Tests for Auto Scaling Group
+1. Create an asg with `python3 asg-manager.py create`
+2. Run a round of tests with a specific configuration. Run the test with `python3 run-osb-on-asg.py -i <test-execution-id>`
+3. After running 1-5 rounds of a specific configuration (e.g. 8 clients), run the `python3 aggregate-results.py -i <test-execution-id pattern>` to aggregate results for a round
+4. Update the ASG (scale out or in) and then rerun steps 2 and 3
