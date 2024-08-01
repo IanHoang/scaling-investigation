@@ -45,8 +45,7 @@ def run_osb_on_asg(ssm_client, host, instance_ids, test_execution_id):
 
     # Get the command ID
         command_id = response['Command']['CommandId']
-        instance_count = len(batch)
-        print(f"Running OSB scripts on {len(batch)} instances: {instance_ids}")
+        print(f"Running OSB scripts on {len(batch)} instances")
         print(f"Command ID: {command_id}")
 
 if __name__ == "__main__":
