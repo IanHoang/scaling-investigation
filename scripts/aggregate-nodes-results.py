@@ -210,7 +210,7 @@ def write_to_file(averaged_results_from_nodes, file_name):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Aggregate Results from Nodes from MDS')
     parser.add_argument('--output-name', '-n', required=True, help="Output filename to use")
-    parser.add_argument('--id', '-i', default=None, help='Test-execution-id or test-execution-id pattern for specific documents')
+    parser.add_argument('--id', '-i', required=True, help='Test-execution-id or test-execution-id pattern for specific documents.')
     args = parser.parse_args()
 
     load_dotenv()
