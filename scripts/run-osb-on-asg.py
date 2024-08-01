@@ -14,21 +14,40 @@ def run_osb_on_asg(ssm_client, host, instance_ids, test_execution_id):
         ''
     ]
 
+    ### SSM has a max number of instances it can send commands to. Need to send them in batches
+    batches = []
+    batch = []
+    for instance_id in instance_ids:
+        if len(batch) == 50:
+            batches.append(batch)
+            batch = []
+            # Need to add current instance id still
+            batch.append(instance_id)
+        else:
+            batch.append(instance_id)
+
+    # Add remainder if any
+    batches.append(batch)
+
+    print("Number of batches: ", len(batches))
+    print("Batches: ", batches)
+
     # Send the command to run the shell script
-    response = ssm_client.send_command(
-        InstanceIds=instance_ids,
-        DocumentName="AWS-RunShellScript",
-        Comment="Run osb script on all ASG instances",
-        Parameters={
-            'commands': shell_script_commands
-        }
-    )
+    for batch in batches:
+        response = ssm_client.send_command(
+            InstanceIds=batch,
+            DocumentName="AWS-RunShellScript",
+            Comment="Run osb script on all ASG instances",
+            Parameters={
+                'commands': shell_script_commands
+            }
+        )
 
     # Get the command ID
-    command_id = response['Command']['CommandId']
-    instance_count = len(instance_ids)
-    print(f"Running OSB scripts on {instance_count} instances: {instance_ids}")
-    print(f"Command ID: {command_id}")
+        command_id = response['Command']['CommandId']
+        instance_count = len(batch)
+        print(f"Running OSB scripts on {len(batch)} instances: {instance_ids}")
+        print(f"Command ID: {command_id}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Aggregate Results from MDS')

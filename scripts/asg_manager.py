@@ -16,7 +16,11 @@ default_security_group = "launch-wizard-53"
 
 def list_asg_instances(ec2_client, autoscaling_client, tags):
     # ASG API cannot filter based on asg_name, thus we need to use tags
-    instances = autoscaling_client.describe_auto_scaling_instances()['AutoScalingInstances']
+    # instances = autoscaling_client.describe_auto_scaling_instances()['AutoScalingInstances']
+    paginator = autoscaling_client.get_paginator('describe_auto_scaling_instances')
+    instances = []
+    for page in paginator.paginate():
+        instances.extend(page['AutoScalingInstances'])
 
     # Filter all ASG instances based on tags
     matched_instances = []
@@ -29,7 +33,7 @@ def list_asg_instances(ec2_client, autoscaling_client, tags):
         if all(instance_tags.get(tag['Key'], None) == tag['Value'] for tag in tags):
             matched_instances.append(instance_id)
 
-    # print("Instances to run on: ", matched_instances)
+    print("Instances to run on: ", matched_instances)
     return matched_instances
 
 def provision_asg(autoscaling_client, asg_name, launch_config_name, instance_type, ami_id, min_size, max_size, desired_capacity, tags, key_name, security_group):
@@ -151,7 +155,7 @@ if __name__ == '__main__':
     scale_parser = subparsers.add_parser('update', help='Update capacity of an existing Auto Scaling Group')
     scale_parser.add_argument('--asg-name', '-n', required=True, help='Auto Scaling Group Name')
     scale_parser.add_argument('--updated-desired-capacity', '-c', type=int, required=True, help='Updated Desired Capacity')
-    create_parser.add_argument('--updated-max-size', '-max', type=int, default=None, help='Updated max size of auto scaling group')
+    scale_parser.add_argument('--updated-max-size', '-max', type=int, default=None, help='Updated max size of auto scaling group')
 
     # delete-asg command
     delete_parser = subparsers.add_parser('delete', help='Delete an Auto Scaling Group')

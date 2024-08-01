@@ -13,19 +13,39 @@ def kill_osb_on_asg(ssm_client, host, instance_ids):
         ''
     ]
 
-    # Send the command to run the shell script
-    response = ssm_client.send_command(
-        InstanceIds=instance_ids,
-        DocumentName="AWS-RunShellScript",
-        Comment="Kill osb script on all ASG instances",
-        Parameters={
-            'commands': shell_script_commands
-        }
-    )
+    ### SSM has a max number of instances it can send commands to. Need to send them in batches
+    batches = []
+    batch = []
+    for instance_id in instance_ids:
+        if len(batch) == 50:
+            batches.append(batch)
+            batch = []
+            # Need to add current instance id still
+            batch.append(instance_id)
+        else:
+            batch.append(instance_id)
 
-    # Get the command ID
-    command_id = response['Command']['CommandId']
-    print(f"Killed OSB on {instance_ids}. Command ID: {command_id}")
+    # Add remainder if any
+    batches.append(batch)
+
+    print("Number of batches: ", len(batches))
+    print("Batches: ", batches)
+
+    for batch in batches:
+        # Send the command to run the shell script
+        response = ssm_client.send_command(
+            InstanceIds=batch,
+            DocumentName="AWS-RunShellScript",
+            Comment="Kill osb script on all ASG instances",
+            Parameters={
+                'commands': shell_script_commands
+            }
+        )
+
+        # Get the command ID
+        command_id = response['Command']['CommandId']
+        print(f"Killed OSB on {len(batch)} instances")
+        print(f"Command ID: {command_id}")
 
 if __name__ == "__main__":
     load_dotenv()
