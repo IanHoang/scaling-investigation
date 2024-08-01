@@ -1,7 +1,9 @@
 import os
 import argparse
 import re
+import json
 import statistics
+import numpy as np
 
 import pandas as pd
 import tabulate
@@ -20,6 +22,7 @@ def aggregate_results(client_details, output_name, test_execution_id):
     documents = get_documents(client, test_execution_id)
 
     throughput_metrics, service_time_metrics, latency_metrics = filter_results(documents)
+
     # Create dataframes
     throughput_df = pd.DataFrame.from_dict(throughput_metrics, orient='index')
     service_time_df = pd.DataFrame.from_dict(service_time_metrics, orient='index')
@@ -30,14 +33,15 @@ def aggregate_results(client_details, output_name, test_execution_id):
     print(tabulate.tabulate(service_time_df, headers='keys', tablefmt='grid', showindex=True))
     print(tabulate.tabulate(latency_df, headers='keys', tablefmt='grid', showindex=True))
 
-    # Aggregate results
-    throughput_agg = {"test-pattern": test_execution_id, "min": None, "mean": None, "median": None, "units": "ops/s"}
-    service_time_agg = {"test-pattern": test_execution_id, "50_0": None, "90_0": None, "99_0": None, "99_9": None, "99_99": None, "100_0": None, "units": "ms"}
-    latency_agg = {"test-pattern": test_execution_id, "50_0": None, "90_0": None, "99_0": None, "99_9": None, "99_99": None, "100_0": None, "units": "ms"}
+    # Average results
+    throughput_agg = {"min": None, "mean": None, "median": None, "units": "ops/s"}
+    service_time_agg = {"50_0": None, "90_0": None, "99_0": None, "99_9": None, "99_99": None, "100_0": None, "units": "ms"}
+    latency_agg = {"50_0": None, "90_0": None, "99_0": None, "99_9": None, "99_99": None, "100_0": None, "units": "ms"}
 
     populated_throughput_agg = calculate_arithmetic_mean(throughput_metrics, throughput_agg)
     populated_service_time_agg = calculate_arithmetic_mean(service_time_metrics, service_time_agg)
     populated_latency_agg = calculate_arithmetic_mean(latency_metrics, latency_agg)
+    print(f"Throughput Metrics: {len(throughput_metrics)}, Service Time Metrics: {len(service_time_metrics)}, Latency Metrics: {len(latency_metrics)}")
     print(populated_throughput_agg)
     print(populated_service_time_agg)
     print(populated_latency_agg)
@@ -46,6 +50,21 @@ def aggregate_results(client_details, output_name, test_execution_id):
     # throughput_df.to_csv(f"throughput-{output_name}.csv", index_label='Row ID')
     # service_time_df.to_csv(f"service-time-{output_name}.csv", index_label='Row ID')
     # latency_df.to_csv(f"latency-{output_name}.csv", index_label='Row ID')
+    averaged_results_from_nodes = {
+        "test-pattern": test_execution_id,
+        "averaged-throughput": populated_throughput_agg,
+        "averaged-service-time": populated_service_time_agg,
+        "averaged-latency": populated_latency_agg
+    }
+
+    new_output_name = ""
+    if output_name[-1] == "*":
+        new_output_name = output_name[0:-2] + "-averaged.json"
+    else:
+        new_output_name = output_name + "-averaged.json"
+
+    write_to_file(averaged_results_from_nodes, new_output_name)
+    print("Wrote to file: ", new_output_name)
 
 def filter_results(documents):
     throughput = {}
@@ -158,13 +177,16 @@ def calculate_arithmetic_mean(nodes, metrics_to_average):
             continue
 
         metrics_from_nodes = [nodes[node][metric] for node in nodes]
-        metrics_to_average[metric] = statistics.mean(metrics_from_nodes)
+        metric_mean = statistics.mean(metrics_from_nodes)
+        # calculate_relative_stdev(metrics_from_nodes, metric_mean)
+        metrics_to_average[metric] = metric_mean
+
 
     return metrics_to_average
 
-
-def calculate_relative_stdev(node_metrics):
-    pass
+def calculate_relative_stdev(metrics_from_nodes, metric_average):
+    stdev = statistics.stdev(metrics_from_nodes)
+    return np.round(stdev / metric_average, decimals=2)
 
 def get_node_ip_address(document_id):
     # Define the regular expression pattern
@@ -179,6 +201,11 @@ def get_node_ip_address(document_id):
     else:
         raise Exception("No IP Address found")
 
+def write_to_file(averaged_results_from_nodes, file_name):
+    formatted_averaged_results_from_nodes = json.dumps(averaged_results_from_nodes, indent=4)
+
+    with open(file_name, "w") as output_json:
+        print(formatted_averaged_results_from_nodes, file=output_json)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Aggregate Results from Nodes from MDS')
