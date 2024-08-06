@@ -176,10 +176,14 @@ def calculate_arithmetic_mean(nodes, metrics_to_average):
         if metric == "test-pattern" or metric == "units":
             continue
 
-        metrics_from_nodes = [nodes[node][metric] for node in nodes]
-        metric_mean = statistics.mean(metrics_from_nodes)
-        # calculate_relative_stdev(metrics_from_nodes, metric_mean)
-        metrics_to_average[metric] = metric_mean
+        try:
+            metrics_from_nodes = [nodes[node][metric] for node in nodes]
+            metric_mean = statistics.mean(metrics_from_nodes)
+            # calculate_relative_stdev(metrics_from_nodes, metric_mean)
+            metrics_to_average[metric] = metric_mean
+        except:
+            print("Error. Unable to get this metric: ", metric)
+            continue
 
 
     return metrics_to_average
