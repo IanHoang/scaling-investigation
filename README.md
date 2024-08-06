@@ -22,3 +22,9 @@ Run `python3 kill-osb-on-asg.py` to kill tests on auto scaling group. Ensure tha
 2. Run a round of tests with a specific configuration. Run the test with `python3 run-osb-on-asg.py -i <test-execution-id>`
 3. After running 1-5 rounds of a specific configuration (e.g. 8 clients), run the `python3 aggregate-results.py -i <test-execution-id pattern>` to aggregate results for a round
 4. Update the ASG (scale out or in) and then rerun steps 2 and 3
+
+#### Preliminary Tests for LG Hosts
+1. Set up LG Host with AMI from auto scaling group experiments
+2. Insert `run-osb-with-term-lg-host.sh` script into instance and build an AMI
+3. Run `bash run-osb-with-term-lg-host.sh <test-execution-id> <endpoint> <clients>` to generate a command to run the test. NOTE: We cannot run it directly in the script because there are issues with parsing \"\" in OSB client.
+4. Run `python3 aggregate-lg-host-results.py -p <test-execution-id-pattern | comma-separated list of test-execution-id-patterns> -n <output_name>`
