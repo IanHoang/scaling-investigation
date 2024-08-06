@@ -242,7 +242,7 @@ def get_documents(client, test_execution_id_pattern):
 
             query_response = client.search(body=query, index=INDEX_PATTERN, size=SIZE)
             # print(query_response)
-            print("Number of documents returned: ", query_response['hits']['total']['value'])
+            print(f"Number of docs received with {pattern}: {query_response['hits']['total']['value']}")
             documents += query_response['hits']['hits']
 
         print("Number of documents total: ", len(documents))
