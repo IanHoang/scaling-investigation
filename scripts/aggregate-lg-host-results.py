@@ -109,12 +109,12 @@ def build_average_service_time_class(all_round_results):
     avg_p99_99_service_time = statistics.mean(cumulative_p99_99_service_time)
     avg_p100_service_time = statistics.mean(cumulative_p100_service_time)
 
-    rsd_p50_service_time = statistics.stdev(cumulative_p50_service_time) / avg_p50_service_time
-    rsd_p90_service_time = statistics.stdev(cumulative_p90_service_time)/ avg_p90_service_time
-    rsd_p99_service_time = statistics.stdev(cumulative_p99_service_time)/ avg_p99_service_time
-    rsd_p99_9_service_time = statistics.stdev(cumulative_p99_9_service_time)/ avg_p99_9_service_time
-    rsd_p99_99_service_time = statistics.stdev(cumulative_p99_9_service_time)/ avg_p99_99_service_time
-    rsd_p100_service_time = statistics.stdev(cumulative_p100_service_time)/ avg_p100_service_time
+    rsd_p50_service_time = (statistics.stdev(cumulative_p50_service_time) / avg_p50_service_time) * 100
+    rsd_p90_service_time = (statistics.stdev(cumulative_p90_service_time) / avg_p90_service_time) * 100
+    rsd_p99_service_time = (statistics.stdev(cumulative_p99_service_time) / avg_p99_service_time) * 100
+    rsd_p99_9_service_time = (statistics.stdev(cumulative_p99_9_service_time) / avg_p99_9_service_time) * 100
+    rsd_p99_99_service_time = (statistics.stdev(cumulative_p99_99_service_time) / avg_p99_99_service_time) * 100
+    rsd_p100_service_time = (statistics.stdev(cumulative_p100_service_time) / avg_p100_service_time) * 100
 
     return AveragedServiceTime(avg_p50_service_time, rsd_p50_service_time, avg_p90_service_time, rsd_p90_service_time, avg_p99_service_time, rsd_p99_service_time, avg_p99_9_service_time, rsd_p99_9_service_time, avg_p99_99_service_time, rsd_p99_99_service_time, avg_p100_service_time, rsd_p100_service_time, units)
 
@@ -149,14 +149,14 @@ def build_average_latency_class(all_round_results):
     avg_p99_99_latency = statistics.mean(cumulative_p99_99_latency)
     avg_p100_latency = statistics.mean(cumulative_p100_latency)
 
-    rsd_p50_latency = statistics.stdev(cumulative_p50_latency) / avg_p50_latency
-    rsd_p90_latency = statistics.stdev(cumulative_p90_latency)/ avg_p90_latency
-    rsd_p99_latency = statistics.stdev(cumulative_p99_latency)/ avg_p99_latency
-    rsd_p99_9_latency = statistics.stdev(cumulative_p99_9_latency)/ avg_p99_9_latency
-    rsd_p99_99_latency = statistics.stdev(cumulative_p99_9_latency)/ avg_p99_99_latency
-    rsd_p100_latency = statistics.stdev(cumulative_p100_latency)/ avg_p100_latency
+    rsd_p50_latency = (statistics.stdev(cumulative_p50_latency) / avg_p50_latency) * 100
+    rsd_p90_latency = (statistics.stdev(cumulative_p90_latency) / avg_p90_latency) * 100
+    rsd_p99_latency = (statistics.stdev(cumulative_p99_latency) / avg_p99_latency) * 100
+    rsd_p99_9_latency = (statistics.stdev(cumulative_p99_9_latency) / avg_p99_9_latency) * 100
+    rsd_p99_99_latency = (statistics.stdev(cumulative_p99_99_latency) / avg_p99_99_latency) * 100
+    rsd_p100_latency = (statistics.stdev(cumulative_p100_latency) / avg_p100_latency) * 100
 
-    return AveragedLatency(avg_p50_latency, rsd_p50_latency, avg_p90_latency, rsd_p90_latency, avg_p99_9_latency, rsd_p99_latency, avg_p99_9_latency, rsd_p99_9_latency, avg_p99_99_latency, rsd_p99_99_latency, avg_p100_latency, rsd_p100_latency, units)
+    return AveragedLatency(avg_p50_latency, rsd_p50_latency, avg_p90_latency, rsd_p90_latency, avg_p99_latency, rsd_p99_latency, avg_p99_9_latency, rsd_p99_9_latency, avg_p99_99_latency, rsd_p99_99_latency, avg_p100_latency, rsd_p100_latency, units)
 
 def filter_documents(documents):
     unique_test_ids = set()
