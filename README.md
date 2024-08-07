@@ -20,8 +20,9 @@ Run `python3 kill-osb-on-asg.py` to kill tests on auto scaling group. Ensure tha
 #### Preliminary Tests for Auto Scaling Group
 1. Create an asg with `python3 asg-manager.py create`
 2. Run a round of tests with a specific configuration. Run the test with `python3 run-osb-on-asg.py -i <test-execution-id>`
-3. After running 1-5 rounds of a specific configuration (e.g. 8 clients), run the `python3 aggregate-results.py -i <test-execution-id pattern>` to aggregate results for a round
-4. Update the ASG (scale out or in) and then rerun steps 2 and 3
+3. After running 1-5 rounds of a specific configuration (e.g. 8 clients), run the `python3 aggregate-nodes-results.py -i <test-execution-id pattern>` to aggregate results for a round. This will aggregate results from all nodes from the experiment through the MDS. The results will be a round of results. Run another round of experiments as needed.
+4. Insert the rounds from step 3 that you want to average into a folder. Run `python3 aggregate-rounds-result.py -f <folder-name> -n <output-name>` to aggregate all rounds and produce a final averaged result file, which can be compared with the results in the LG Hosts tests.
+5. Update the ASG (scale out or in) and then rerun stepss 2 - 4.
 
 #### Preliminary Tests for LG Hosts
 1. Set up LG Host with AMI from auto scaling group experiments
