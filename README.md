@@ -1,4 +1,4 @@
-### README
+### Scale-Up Investigation
 
 #### Prerequisites
 1. Git clone repository to local computer
