@@ -3,3 +3,4 @@ boto3
 pandas
 tabulate
 opensearch-py
+matplotlib
