@@ -17,6 +17,8 @@ default_security_group = "launch-wizard-53"
 def list_asg_instances(ec2_client, autoscaling_client, tags):
     # ASG API cannot filter based on asg_name, thus we need to use tags
     # instances = autoscaling_client.describe_auto_scaling_instances()['AutoScalingInstances']
+    # NOTE: As of 8/26/2024, this only lists out autoscaling groups instances with the tag TYPE: OSB_INVESTIGATION
+    # Thus, if we are using two autoscaling groups and both have tag TYPE: OSB_INVESTIGATION on each instance, it will list out instances from both autoscaling groups
     paginator = autoscaling_client.get_paginator('describe_auto_scaling_instances')
     instances = []
     for page in paginator.paginate():
