@@ -39,7 +39,7 @@ def list_asg_instances(ec2_client, autoscaling_client, tags):
 def provision_asg(autoscaling_client, asg_name, launch_config_name, instance_type, ami_id, min_size, max_size, desired_capacity, tags, key_name, security_group):
     # Create a launch configuration
     if does_launch_config_exist(autoscaling_client, launch_config_name):
-        print("Launch configuraiton already exists")
+        print("Launch configuraiton already exists. Using existing launch configuration with the same name.")
     else:
         response_launch_config = autoscaling.create_launch_configuration(
             LaunchConfigurationName=launch_config_name,
@@ -106,7 +106,7 @@ def does_launch_config_exist(autoscaling_client, launch_config_name):
             LaunchConfigurationNames=[launch_config_name]
         )
         print("Launch configurations: ", response['LaunchConfigurations'])
-        if len(response['LaunchConfigurations']) > 0 and launch_config_name in response['LaunchConfigurations']:
+        if len(response['LaunchConfigurations']) > 0 and launch_config_name in response['LaunchConfigurations'][0]["LaunchConfigurationName"]:
             return True
         else:
             return False
