@@ -14,11 +14,9 @@ def main(filename, output_name, x_metrics, y_metrics):
     y_values = data[y_metrics]
     print(y_values)
 
-
-
     # Create a line plot
     plt.figure(figsize=(10, 6))  # Set the figure size (width, height) in inches
-    plt.plot(x_values, y_values)
+    plt.plot(x_values, y_values, marker='o', markersize=4, markerfacecolor='black', markeredgecolor='black')
 
     # Add labels and title
     plt.xlabel(x_metrics)
